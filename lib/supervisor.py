@@ -91,7 +91,7 @@ def api_answers(base):
     let a proxy's 404 stand in for one.
     """
     try:
-        with LOCAL_OPENER.open(base + '/control', timeout=2.0) as response:
+        with LOCAL_OPENER.open(base + '/control', timeout=5.0) as response:
             return 200 <= response.status < 300
     except urllib.error.HTTPError as error:
         # The engine answered. 400 is the documented no-command reply.
@@ -297,7 +297,25 @@ def main():
     started_pid = 0
     owned = False
 
-    if api_answers(base):
+    """
+    Confirm a non-answer before acting on it.
+
+    ``api_v2.py`` queues ``/control`` behind an in-flight synthesis, so a busy engine
+    can stay silent for well over one probe timeout. The first version acted on the
+    very first miss, which killed the engine mid-synthesis and restarted it — the
+    user saw "cannot connect" halfway through a reply. Three retries over nine
+    seconds cover a long sentence while still catching a genuinely dead process.
+    """
+    answered = api_answers(base)
+    if not answered:
+        for attempt in range(3):
+            time.sleep(3.0)
+            if api_answers(base):
+                answered = True
+                log(options.log, 'engine answered on retry %d; not clearing it' % (attempt + 1))
+                break
+
+    if answered:
         existing = sorted(pids_on_port(port))
         log(options.log, 'engine already answering; pid(s) %s' % (existing or 'unknown'))
         if len(existing) == 1:
