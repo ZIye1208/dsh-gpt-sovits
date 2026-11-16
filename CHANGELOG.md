@@ -6,6 +6,50 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.0] — 2026-11-17
+
+The engine switch, where people actually look for it: on the tray icon. The desktop app builds its
+tray menu in the Electron main process, which a plugin cannot reach, so the plugin makes a
+byte-for-byte edit to `app.asar` instead — backed up, verified, reversible, and re-applied after a
+DSH upgrade.
+
+### Added
+
+- **Two rows in the tray menu.** A status row (`GPT-SoVITS已启用` in green, `GPT-SoVITS已停用` in red,
+  grey `GPT-SoVITS检测中…` when the probe cannot answer) and an action row (`启动` / `停止`, with
+  `启动中…` / `停止中…` while it works). Clicking the status row probes immediately; clicking the
+  action row starts or stops the engine and re-checks 1.5 s later. Windows cannot colour menu text,
+  so the colour lives in a 16×16 dot icon.
+
+- **A divider on each side.** "Open DeepSeek Harness", a separator, the two engine rows, a separator,
+  "Quit DeepSeek Harness" — and the first separator is skipped when the extension is not loaded, so
+  an uninstalled plugin leaves no doubled rule.
+
+- **The archive patch is self-healing.** `lib/tray-patch.mjs` locates `resources/app.asar`, replaces
+  the `lib/types/tray.js` region and the tray construction site with equal-length copies, rewrites the
+  header SHA-256 so an integrity-checking install still validates, and keeps the untouched `main.js`
+  at `$DSH_HOME/gpt-sovits/tray-main.js.orig`. It runs five seconds after the plugin starts, is
+  idempotent, and patches again after a DSH upgrade restores the stock file.
+
+- **A focused diagnostic.** Probe and action failures are appended to
+  `$DSH_HOME/gpt-sovits/tray-diag.log` — origin only, never the access token. The menu stays quiet; an
+  unreachable Host shows grey rather than guessing "stopped".
+
+### Notes
+
+- The patched menu appears on the **next** DSH launch: the running main process keeps the copy it
+  parsed at startup. The plugin says so in its log after patching.
+- Windows desktop app only. On the web profile the patch reports `no-app` and changes nothing;
+  on other platforms it reports `skipped`.
+- Uninstalling the plugin restores the stock three-item menu by itself: the patched code finds no
+  extension module and falls back.
+
+### Fixed
+
+- **The Host URL is not an origin.** It is `<origin>/?token=…`; concatenating a route onto it landed
+  on the app shell and the health probe parsed HTML as JSON, so the status row sat on "检测中…"
+  forever. Only `origin` is used now.
+
 ## [0.3.3] — 2026-10-21
 
 A startup memory check: DSH is opened, free memory is read once, and only then is the engine allowed
