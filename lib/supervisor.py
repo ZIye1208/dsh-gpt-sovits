@@ -405,6 +405,14 @@ def main():
             time.sleep(POLL_SECONDS)
         log(options.log, 'ready=%s' % ready)
         if not ready:
+            # The child is alive but never answered. Leaving it would orphan an engine
+            # that holds the GPU with no supervisor watching it; kill what we started.
+            log(
+                options.log,
+                'ERROR engine did not answer within %.0fs; killing pid %d'
+                % (POLL_TRIES * POLL_SECONDS, started_pid),
+            )
+            kill_tree(started_pid)
             return 1
 
     # Written on every path, including adoption: the next DSH reads this to find

@@ -6,6 +6,47 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.1] — 2026-11-17
+
+A correctness pass over the reading queue and the engine switch. Nothing new to configure; every
+change fixes a case that used to fail silently.
+
+### Fixed
+
+- **Auto-read no longer goes quiet after a single stop.** `pauseFor` handed its timer to `stop()`,
+  which cleared the timer without settling the promise the drain loop was awaiting. The loop stayed
+  `draining` forever and every later reply was silent until the page reloaded.
+
+- **Stopping no longer replays the reply.** `stop()` cleared the queue but not the driver's claim,
+  so the next text update re-queued the message from offset 0.
+
+- **The first reply of a new conversation can no longer break the chat page.** The text hook
+  returned before calling `useChat` when no message id existed yet, so the hook count changed on the
+  render where the reply appeared — the shape React rejects outright. The diagnostic probes that
+  made extra hook calls during render moved into effects.
+
+- **A missing engine interpreter no longer takes DSH down.** `spawn` failures arrive as an
+  asynchronous `error` event; without a listener Node treated them as an uncaught exception.
+
+- **The launch slot is claimed before the first probe.** Two callers could both pass the guard
+  during the ten-second health probe and start two supervisors on the same port. A failed spawn now
+  also releases the slot immediately instead of holding it for four minutes.
+
+- **The audio cache key includes the split method.** The same text asked for `cut0` and then `cut5`
+  was served the first clip.
+
+- **The tray rows step aside when the plugin is gone.** A 404 from the plugin's route now hides both
+  rows instead of leaving a permanent "检测中…"; a network failure still reads as unknown, and
+  reinstalling the plugin restores them.
+
+- **An engine that never becomes ready is no longer orphaned.** After 140 seconds the supervisor
+  kills the child it started instead of exiting and leaving it holding the GPU.
+
+- **The read-aloud action reports once per message, not once per render.** Each report was a
+  synchronous log write on the Host thread while a reply streamed.
+
+---
+
 ## [0.4.0] — 2026-11-17
 
 The engine switch, where people actually look for it: on the tray icon. The desktop app builds its
