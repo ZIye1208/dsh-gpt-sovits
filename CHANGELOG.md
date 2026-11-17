@@ -6,6 +6,26 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.5] — 2026-11-17
+
+The first answer of a new conversation is spoken again.
+
+### Fixed
+
+- **A brand-new conversation's first reply was never read aloud.** The switch window silences any reply
+  that had already settled inside it, which is what landing on an old conversation needs — but the first
+  answer in a new conversation settles inside that window too, so it was filed as history and never
+  spoken. The window now yields to a turn the user started, and, for the case where the client mounts
+  only after the reply has arrived, to a conversation with a single turn and no read mark: the answer to
+  the question just asked in a conversation that did not exist before. A conversation with more turns,
+  or one that carries a mark, still stays silent.
+
+- **A switch left the previous conversation's turn marker behind.** Turn numbers are per conversation,
+  so landing on one with fewer turns than the old marker made every later turn compare "not greater"
+  and be ignored — including the turn count that decides whether a reply is new.
+
+---
+
 ## [0.4.4] — 2026-11-17
 
 The switch fix that 0.4.3 was meant to be. 0.4.3 tried to silence the newest reply on a switch and did

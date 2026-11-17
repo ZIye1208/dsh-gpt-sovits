@@ -1,6 +1,6 @@
 # dsh-gpt-sovits
 
-[![version](https://img.shields.io/badge/version-v0.4.4-blue)](./CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-v0.4.5-blue)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20DSH%20desktop-lightgrey)
 
@@ -49,7 +49,7 @@ dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 
 ## 相对上游的改动
 
-从上游 **v0.3.3** 起，这个 fork 发了 4 个版本。下面只列可感知的行为变化；每一条都在本机实测复现过，**不是对上游代码质量的评价**——同一个包换个环境跑，踩到的就是这些。完整明细见 [CHANGELOG](./CHANGELOG.md)。
+从上游 **v0.3.3** 起，这个 fork 发了 5 个版本。下面只列可感知的行为变化；每一条都在本机实测复现过，**不是对上游代码质量的评价**——同一个包换个环境跑，踩到的就是这些。完整明细见 [CHANGELOG](./CHANGELOG.md)。
 
 | 版本 | 主题 | 改了什么 |
 |---|---|---|
@@ -58,6 +58,7 @@ dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 | **0.4.2** | 边界状态 | 引擎停过之后仍以为权重已加载，于是不发 `set_*_weights`，念出来的声音是错的；设置文件非原子写，中断会剩半个 JSON；一句合成失败就丢掉后面排队的所有句子；每句新建一个 `AudioContext`，长回复到上限后静音；`launched:false` 一律报「启动失败」，把「已在运行」也算了进去；两个启动序列的 rejection 没人接（Node 22 致命）；每次搜引擎都扫 26 个盘符；中文路径进 `settings.local.bat` 变成 `?`；日志整文件重读，实际只需尾部 256 KB；`audioDir()` 当函数调用，磁盘清理从未执行；试音合成中不能取消 |
 | **0.4.3** | 自动朗读跨会话 | 读标记是一个全局消息 id，切会话就把别的会话最后一条当新消息念，切回去还会重念；喇叭按钮不跟随自动朗读（拿逐句文本比整条消息，永远不相等）；合成中按钮被禁用，取消点不到 |
 | **0.4.4** | 切换静默的真正修复 | 0.4.3 的拦截标记复用了「归队列所有」的含义，下一个 driver 副本看到「已认领」反而跳过了朗读判断、直接入队——拦截动作本身促成了播放。改为独立静默集合，在一切分支之前判定；从未设置过时间戳的新副本按「刚落地」处理 |
+| **0.4.5** | 新对话第一条不再被吞 | 切换窗口把「窗口内已定稿的回复」一律当历史，新对话的第一句短回复正好落进窗口，于是永远不读。现在窗口让位于「用户发起的轮次」；客户端在回复生成后才挂载的情况，用「该会话只有一轮且没有读标记」识别。另修切会话时残留上一会话的轮次标记 |
 
 这些改动没有回流上游。若上游恢复维护，这份 diff 可以按版本逐个挑回去。
 
@@ -129,7 +130,7 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | 最新版 | 仓库首页 → **Code** → Download ZIP |
 | **某个发行版** | **[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
 | 任意历史提交 | `git clone` 后 `git checkout <提交哈希>` |
-| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.4.4` |
+| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.4.5` |
 
 | 版本 | 说明 |
 |---|---|
@@ -149,6 +150,7 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | `v0.4.2` | **边界状态**：权重缓存复位、设置原子写、单句失败不丢余句、离线音频上下文、`launched:false` 判定、扫盘、bat 编码、日志尾部读、磁盘清理 |
 | `v0.4.3` | **自动朗读跨会话**：读标记按会话分键并重建基线、喇叭按钮跟随朗读、合成中可取消 |
 | `v0.4.4` | **切换静默的真正修复**：拦截标记改为独立集合，避免被后续副本误读成「已入队」 |
+| `v0.4.5` | **新对话第一条不再被吞**：切换窗口让位于用户发起的轮次；回复生成后才挂载的客户端用「单轮 + 无读标记」识别；切会话不再残留上一会话的轮次标记 |
 
 版本变更记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
