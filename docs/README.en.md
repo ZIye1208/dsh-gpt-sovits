@@ -18,8 +18,10 @@
 
 **GPT-SoVITS** text-to-speech for the DeepSeek Harness (DSH) web GUI: per-reply read-aloud, an auto-read toggle, voice presets and a settings page. It drives *your own* locally deployed GPT-SoVITS engine and voices — fully offline, nothing goes to a cloud.
 
+> **A fork of [`91koukou/dsh-gpt-sovits`](https://github.com/91koukou/dsh-gpt-sovits), based on upstream v0.3.3.** Upstream code and design belong to its author; this fork's changes are in [CHANGELOG](../CHANGELOG.md) and [the README section "相对上游的改动"](../README.md#相对上游的改动).
+
 ```sh
-dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits
+dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 ```
 
 **This repository ships no model weights, no reference audio and no audio samples**, and it does not start your engine. Bring your own.
@@ -102,15 +104,15 @@ dsh plugin --profile desktop remove dsh-gpt-sovits
 | You want | How |
 |---|---|
 | The latest | Repository home → **Code** → Download ZIP |
-| **A specific release** | The **[Releases](https://github.com/91koukou/dsh-gpt-sovits/releases)** page → pick a version → `Source code (zip)` |
+| **A specific release** | The **[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases)** page → pick a version → `Source code (zip)` |
 | Any historical commit | `git clone`, then `git checkout <commit>` |
-| Install a specific version | `dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits#v0.1.0` |
+| Install a specific version | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.1.0` |
 
 Each release is anchored by a tag, so **an older version is never overwritten by a later update**:
 
 | Version | Note |
 |---|---|
-| [`v0.1.0`](https://github.com/91koukou/dsh-gpt-sovits/releases/tag/v0.1.0) | First release: per-reply read-aloud button, auto-read toggle, voice presets, settings page |
+| [`v0.1.0`](https://github.com/ZIye1208/dsh-gpt-sovits/releases/tag/v0.1.0) | First release: per-reply read-aloud button, auto-read toggle, voice presets, settings page |
 | `v0.2.0` | Engine lifecycle follows DSH, symbol normalisation, streaming/summary split, queued reading, startup greeting, engine console |
 | `v0.3.0` | Full Chinese sentence terminators and paragraph boundaries, punctuation-driven pauses with the engine's trailing silence trimmed, a workspace switch cancels the reading, memory-only audio, per-sentence speed and expression |
 | `v0.3.1` | **A conversation switch really does stop the voice**: the signal moved to a module-level value that survives the unmount-and-remount (0.3.0 kept it in the component's `useRef`, and a session slot is re-keyed per session, so it never fired); an unmounting driver also releases its audio element |

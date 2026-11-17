@@ -1,6 +1,6 @@
 # dsh-gpt-sovits
 
-[![version](https://img.shields.io/badge/version-v0.3.3-blue)](./CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-v0.4.4-blue)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20DSH%20desktop-lightgrey)
 
@@ -11,8 +11,11 @@
 > **代码是 AI 写的，声音是作者训练的。**
 > 本项目由 **DeepSeek（`deepseek-flash`）** 在 DSH 会话中逐轮写成 —— 出主意、修 bug、写测试、读宿主源码、量自己的宿主。完整过程见 [它是怎么来的](./docs/README.zh.md#它是怎么来的)。
 
+> **这是 [`91koukou/dsh-gpt-sovits`](https://github.com/91koukou/dsh-gpt-sovits) 的 fork，基线是上游 v0.3.3。**
+> 上游在 2026-10 之后没有新提交，我在这里继续维护，出发点是自己要用托盘菜单直接启停引擎，以及一批在实测里能踩到的边界情况。上游的代码与设计归原作者，本 fork 的增量见 [相对上游的改动](#相对上游的改动)。
+
 ```sh
-dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits
+dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 ```
 
 **本仓库不附带任何模型权重、参考音频或音频样本**，也不替你启动引擎 —— 这些都由你自己准备。
@@ -44,6 +47,22 @@ dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits
 
 ---
 
+## 相对上游的改动
+
+从上游 **v0.3.3** 起，这个 fork 发了 4 个版本。下面只列可感知的行为变化；每一条都在本机实测复现过，**不是对上游代码质量的评价**——同一个包换个环境跑，踩到的就是这些。完整明细见 [CHANGELOG](./CHANGELOG.md)。
+
+| 版本 | 主题 | 改了什么 |
+|---|---|---|
+| **0.4.0** | 托盘菜单启停 | 托盘右键菜单多两行：状态行（绿/红圆点 + `GPT-SoVITS已启用`／`已停用`）、动作行（`启动`／`停止`）。点状态行立即探测，点动作行直接启停、1.5 秒后复核。DSH 的托盘菜单建在 Electron 主进程里、插件够不着，所以是对 `app.asar` 托盘区做等长字节替换——带备份、回读校验、可回滚，升级 DSH 后自动重打 |
+| **0.4.1** | 朗读与启停的可靠性 | 停止一次之后自动朗读永久静默（`pauseFor` 的 Promise 被 `stop()` 连同定时器一起丢弃）；停止后整条从头上重念；新会话第一条长回复可能让聊天页白屏（hook 数量在两次渲染间变化）；缺解释器时 `spawn` 失败直接带崩宿主；十秒探测窗口内并发双开 supervisor；`cut0`／`cut5` 共用缓存键，念错音频；托盘在插件卸载后永远显示「检测中…」；引擎 140 秒没就绪会留下孤儿进程占 GPU；流式期间每帧写一次诊断日志（宿主线程同步落盘） |
+| **0.4.2** | 边界状态 | 引擎停过之后仍以为权重已加载，于是不发 `set_*_weights`，念出来的声音是错的；设置文件非原子写，中断会剩半个 JSON；一句合成失败就丢掉后面排队的所有句子；每句新建一个 `AudioContext`，长回复到上限后静音；`launched:false` 一律报「启动失败」，把「已在运行」也算了进去；两个启动序列的 rejection 没人接（Node 22 致命）；每次搜引擎都扫 26 个盘符；中文路径进 `settings.local.bat` 变成 `?`；日志整文件重读，实际只需尾部 256 KB；`audioDir()` 当函数调用，磁盘清理从未执行；试音合成中不能取消 |
+| **0.4.3** | 自动朗读跨会话 | 读标记是一个全局消息 id，切会话就把别的会话最后一条当新消息念，切回去还会重念；喇叭按钮不跟随自动朗读（拿逐句文本比整条消息，永远不相等）；合成中按钮被禁用，取消点不到 |
+| **0.4.4** | 切换静默的真正修复 | 0.4.3 的拦截标记复用了「归队列所有」的含义，下一个 driver 副本看到「已认领」反而跳过了朗读判断、直接入队——拦截动作本身促成了播放。改为独立静默集合，在一切分支之前判定；从未设置过时间戳的新副本按「刚落地」处理 |
+
+这些改动没有回流上游。若上游恢复维护，这份 diff 可以按版本逐个挑回去。
+
+---
+
 ## 快速开始
 
 ### 1. 前置条件
@@ -68,7 +87,7 @@ runtime\python.exe api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infe
 ### 3. 安装插件
 
 ```sh
-dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits
+dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 ```
 
 装完**刷新页面**（客户端半身在启动图里合成，新插件需要一次页面加载才会出现）。
@@ -108,9 +127,9 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | 你想要 | 怎么做 |
 |---|---|
 | 最新版 | 仓库首页 → **Code** → Download ZIP |
-| **某个发行版** | **[Releases](https://github.com/91koukou/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
+| **某个发行版** | **[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
 | 任意历史提交 | `git clone` 后 `git checkout <提交哈希>` |
-| 安装指定版本 | `dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits#v0.3.0` |
+| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.4.4` |
 
 | 版本 | 说明 |
 |---|---|
@@ -120,6 +139,16 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | `v0.3.1` | **切换会话真正停播**：判据改为跨卸载重挂存活的模块级变量 |
 | `v0.3.2` | **四处可靠性修复**：计划内的取消不再被上报成播放失败、被淘汰的音频自动重新合成、一个回合只重置一次、诊断事件有了内存与磁盘上限 |
 | `v0.3.3` | **启动内存检查**：每次启动 DSH 先读一次可用内存，低于 4.0 GB（可调）就不启动引擎；插件照常加载，状态卡说明原因并可手动启动 |
+
+**以下是这个 fork 自己的版本**（上游到 v0.3.3 为止，细节见 [相对上游的改动](#相对上游的改动)）：
+
+| 版本 | 说明 |
+|---|---|
+| `v0.4.0` | **托盘菜单启停引擎**：状态行（绿/红圆点）+ 动作行（启动/停止），点击即用 |
+| `v0.4.1` | **朗读与启停的可靠性**：停止后静默、停止后重念、hook 数量变化白屏、spawn 带崩宿主、并发双开、缓存键、托盘 404、孤儿进程、逐帧写日志 |
+| `v0.4.2` | **边界状态**：权重缓存复位、设置原子写、单句失败不丢余句、离线音频上下文、`launched:false` 判定、扫盘、bat 编码、日志尾部读、磁盘清理 |
+| `v0.4.3` | **自动朗读跨会话**：读标记按会话分键并重建基线、喇叭按钮跟随朗读、合成中可取消 |
+| `v0.4.4` | **切换静默的真正修复**：拦截标记改为独立集合，避免被后续副本误读成「已入队」 |
 
 版本变更记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
@@ -155,8 +184,13 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 every assistant reply, an auto-read toggle, voice presets and a settings panel — fully offline, nothing
 goes through a cloud service.
 
+> **A fork of [`91koukou/dsh-gpt-sovits`](https://github.com/91koukou/dsh-gpt-sovits), based on upstream
+> v0.3.3.** Upstream has no new commits since October 2026; this fork continues from there — mainly to put
+> the engine switch on the tray icon, plus a set of edge cases hit in practice. Upstream code and design
+> belong to its author; this fork's own changes are listed in [CHANGELOG.md](./CHANGELOG.md).
+
 ```sh
-dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits
+dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 ```
 
 **This repository ships no model weights, reference audio or audio samples**, and it will not start the
@@ -169,4 +203,4 @@ units and punctuation spoken the way a person would say them · audio kept in me
 and expression · voice presets · an embedded engine console · loopback-only routes.
 
 **Full documentation: [docs/README.en.md](./docs/README.en.md)** · **Downloads**: see the
-[Releases](https://github.com/91koukou/dsh-gpt-sovits/releases) page.
+[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases) page.

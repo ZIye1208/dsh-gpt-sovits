@@ -18,8 +18,10 @@
 
 给 DeepSeek Harness（DSH）Web GUI 接入 **GPT-SoVITS** 语音合成：每条助手回复一键朗读、自动朗读开关、音色预设与设置面板。用你自己本地部署的 GPT-SoVITS 引擎和音色，完全离线、不经云端。
 
+> **这是 [`91koukou/dsh-gpt-sovits`](https://github.com/91koukou/dsh-gpt-sovits) 的 fork，基线为上游 v0.3.3。** 上游代码与设计归原作者；本 fork 的增量见 [README「相对上游的改动」](../README.md#相对上游的改动) 与 [CHANGELOG](../CHANGELOG.md)。
+
 ```sh
-dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits
+dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 ```
 
 **本仓库不附带任何模型权重、参考音频或音频样本**，也不替你启动引擎 —— 这些都由你自己准备。
@@ -102,15 +104,15 @@ dsh plugin --profile desktop remove dsh-gpt-sovits
 | 你想要 | 怎么做 |
 |---|---|
 | 最新版 | 仓库首页 → **Code** → Download ZIP |
-| **某个发行版** | **[Releases](https://github.com/91koukou/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
+| **某个发行版** | **[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
 | 任意历史提交 | `git clone` 后 `git checkout <提交哈希>` |
-| 安装指定版本 | `dsh plugin --profile desktop add github:91koukou/dsh-gpt-sovits#v0.1.0` |
+| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.1.0` |
 
 每个发行版都有 tag 锚定，**旧版本不会被后续更新覆盖**：
 
 | 版本 | 说明 |
 |---|---|
-| [`v0.1.0`](https://github.com/91koukou/dsh-gpt-sovits/releases/tag/v0.1.0) | 首个发布版：逐条朗读按钮、自动朗读开关、音色预设、设置面板 |
+| [`v0.1.0`](https://github.com/ZIye1208/dsh-gpt-sovits/releases/tag/v0.1.0) | 首个发布版：逐条朗读按钮、自动朗读开关、音色预设、设置面板 |
 | `v0.2.0` | 引擎生命周期跟随 DSH、文本规范化、流式/总结分流、队列式朗读、启动问候、引擎控制台 |
 | `v0.3.0` | 分句补全中文标点与段落边界、按标点插入停顿并裁掉引擎尾部静音、切换工作区取消朗读、音频改内存、逐句语速与情感 |
 | `v0.3.1` | **切换会话真正停播**：判据改为跨卸载重挂存活的模块级变量（v0.3.0 那版存在组件 `useRef` 里，而会话槽位按代际 key 重挂，于是永不触发）；驱动卸载时额外释放音频元素 |
