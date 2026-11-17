@@ -6,6 +6,59 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.2] — 2026-11-17
+
+The second correctness pass: the edge cases that fail quietly. Nothing new to configure, and every
+item here was reproduced or probed before it was changed.
+
+### Fixed
+
+- **The engine's weights are forgotten when it stops.** The cached pair answered "the engine already
+  has this voice" after a restart, so no `set_*_weights` was sent and the reply came out in whatever
+  voice `api_v2.py` had loaded from its own yaml — audibly wrong, with nothing in the log.
+
+- **Settings are written atomically.** A kill or power cut during the old `writeFileSync` left half a
+  JSON file, which reads back as "no voice presets at all". The new file is written beside the old
+  one and renamed over it, so a reader sees either version, never a mixture.
+
+- **One failed sentence no longer ends the reply.** The drain loop used to leave through its outer
+  `catch`, dropping every sentence still queued behind the failure; a single engine hiccup mid
+  paragraph left the rest of a long answer unspoken. The failure is now handled per sentence.
+
+- **The tail-trim analyser no longer exhausts audio contexts.** It created a live `AudioContext` per
+  sentence to measure where the voice stops. Chrome caps how many a page may hold, so long replies
+  went silent once the cap was reached. It now uses an offline context, which is pure computation.
+
+- **"Already running" is no longer reported as "start failed".** The host answers `launched: false`
+  for four different situations — already up, launcher in flight, memory gate, stopped by the user —
+  and the client flattened all of them into a failure message.
+
+- **A Chinese engine path reaches the standalone launcher intact.** `settings.local.bat` was written
+  as ASCII, so non-ASCII directories arrived as `?` and the launcher pointed nowhere. It is UTF-8 now
+  and switches the console to 65001 on its second line. Quotes are stripped and `%` escaped, which
+  also closes the one place a configured path could inject a command.
+
+- **The drive sweep only runs when it is needed.** Candidate discovery built its whole list up front,
+  so every caller paid for `readdirSync` on all 26 drive letters — and a disconnected network share
+  blocks that call for seconds. It is a generator now, and stops at the first checkout it finds.
+
+- **The log route reads a tail, not the file.** `engine-output.log` grows for as long as the engine
+  runs, and the settings page re-read it whole on every poll. It reads the last 256 KB, and reports
+  the real file size rather than the decoded length.
+
+- **Two boot sequences handle their own rejections.** An unhandled rejection is fatal on Node 22, so
+  a throw in either `void (async …)()` would have taken the whole Host down over a failed engine
+  start or an orphan sweep.
+
+- **The preview can be cancelled.** The button was disabled while synthesis ran, so a mis-click meant
+  waiting out a whole clip. A second click stops it, and the label says so.
+
+- **The on-disk clip purge actually runs.** `audioDir()` was called as a function although it is a
+  string, so the cleanup threw a `TypeError` that the surrounding `try` swallowed and old WAV files
+  were never reclaimed.
+
+---
+
 ## [0.4.1] — 2026-11-17
 
 A correctness pass over the reading queue and the engine switch. Nothing new to configure; every
