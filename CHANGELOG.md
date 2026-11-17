@@ -6,6 +6,23 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.4] — 2026-11-17
+
+The switch fix that 0.4.3 was meant to be. 0.4.3 tried to silence the newest reply on a switch and did
+the opposite.
+
+### Fixed
+
+- **Switching conversations still read the last reply aloud.** The interception marked the reply as
+  `CLAIMED`, and `CLAIMED` means "the queue owns this". The next mounted driver copy saw the claim,
+  skipped the speak branch, and fell through to `enqueue()` — the queue check was
+  `queuedUpTo === 0`, which is exactly what a reply that was never queued looks like. The
+  interception was causing the playback. Silenced replies now live in their own set, checked before
+  any other branch, and the grace window counts a never-stamped copy as "just landed" rather than
+  "landed long ago".
+
+---
+
 ## [0.4.3] — 2026-11-17
 
 A reply belongs to its own conversation. Two fixes around auto-read, both about state that was kept
