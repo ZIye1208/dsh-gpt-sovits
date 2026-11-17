@@ -6,6 +6,30 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.3] — 2026-11-17
+
+A reply belongs to its own conversation. Two fixes around auto-read, both about state that was kept
+in one place but belonged in another.
+
+### Fixed
+
+- **Switching conversations no longer reads the previous reply aloud.** The read mark was a single
+  global message id, so every other conversation's newest reply looked unread; `restart()` also cleared
+  it on the way out, which made switching back read a reply that had already been heard. The mark is
+  keyed by conversation now, and every switch establishes a baseline: a newest message that had already
+  settled is history and is marked read, while one still streaming was generated just now and is spoken
+  normally.
+
+- **The speaker button follows auto-read.** `playing` was only set by `play()` — the one-shot path
+  behind the button and the preview — while the queue ran on `busy` alone, and the button compared its
+  whole message text against the queue's current *sentence*, so it never matched. It matches on the
+  message id now, and the glyph turns into a pause for the duration of a spoken reply.
+
+- **A synthesis in progress can be cancelled.** The button was disabled while loading, which made the
+  cancel branch in its click handler unreachable exactly when the user needed it.
+
+---
+
 ## [0.4.2] — 2026-11-17
 
 The second correctness pass: the edge cases that fail quietly. Nothing new to configure, and every
