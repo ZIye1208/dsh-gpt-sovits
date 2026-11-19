@@ -6,6 +6,42 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.5.0] — 2026-11-20
+
+Read any text aloud.
+
+### Added
+
+- **A sidebar reader (right rail → 「朗读文本」).** Drop a text file (`.txt` / `.md` / `.srt`, 40+
+  extensions) or paste text straight in, press 朗读, and it reads from the first character to the last.
+  Blocking, sentence splitting, the symbol and unit tables, punctuation pauses, voice, speed and volume
+  all come from the same player and settings as the chat buttons — this is not a second playback path.
+  Progress shows 「第 i / m 块」. The text, file name and position live in browser storage, so a reload
+  keeps them; when playback is interrupted (a conversation switch, or the main chat button taking the
+  channel), a 「继续阅读」 bar appears and resumes from the block that was interrupted.
+- **Encoding detection.** BOM first, then strict UTF-8, then GB18030 (the ANSI code page on Chinese
+  Windows). A wrong guess can be re-decoded as UTF-8 / GBK / UTF-16LE / UTF-16BE without re-picking the
+  file.
+- **Read any selected text.** Select text anywhere in the page and a 🔊 button appears under the
+  selection; it speaks the selection and turns into 「停止」 with progress while playing. It does not
+  appear inside inputs, textareas or editable regions.
+- **Two switches.** Settings → 语音朗读 gains 划词朗读 and 侧边栏朗读面板; both take effect immediately.
+
+### Changed
+
+- **The chat button still wins the channel, but no longer stops the sidebar for good.** When the main
+  reply button (or auto-read) starts, the sidebar yields and remembers the block it reached; switching
+  conversations or sending a message no longer interrupts it.
+- **`SovitsPlayer` gained progress and a resume point.** `play()` accepts `startIndex`; playback tracks
+  「block i of m」; `stop()` stores the resume point.
+
+### Tests
+
+- No new automated tests; `node --check lib/client.js` and `node scripts/selfcheck.mjs` (62 checks)
+  pass.
+
+---
+
 ## [0.4.6] — 2026-11-19
 
 Voice presets fold.

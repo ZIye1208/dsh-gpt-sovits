@@ -1,6 +1,6 @@
 # dsh-gpt-sovits
 
-[![version](https://img.shields.io/badge/version-v0.4.6-blue)](./CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-v0.5.0-blue)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20DSH%20desktop-lightgrey)
 
@@ -60,6 +60,7 @@ dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 | **0.4.4** | 切换静默的真正修复 | 0.4.3 的拦截标记复用了「归队列所有」的含义，下一个 driver 副本看到「已认领」反而跳过了朗读判断、直接入队——拦截动作本身促成了播放。改为独立静默集合，在一切分支之前判定；从未设置过时间戳的新副本按「刚落地」处理 |
 | **0.4.5** | 新对话第一条不再被吞 | 切换窗口把「窗口内已定稿的回复」一律当历史，新对话的第一句短回复正好落进窗口，于是永远不读。现在窗口让位于「用户发起的轮次」；客户端在回复生成后才挂载的情况，用「该会话只有一轮且没有读标记」识别。另修切会话时残留上一会话的轮次标记 |
 | **0.4.6** | 音色预设折叠 | 每个预设原是一个完整表单（名称、两个模型、参考音频、提示词、语言），几个就铺满整页。改成一条摘要行，点开编辑、点收折起；摘要显示两个权重文件名和参考音频名。新增的自动展开，只有一个时自动展开，删除后其余行保持原状态 |
+| **0.5.0** | 侧边栏朗读与划词朗读 | 右侧栏新增「朗读文本」面板：拖入/打开文字文件或直接粘贴，整篇按块念完并显示进度，编码自动识别且可手动切换，文本与位置刷新不丢，被打断后从断点续读。选中页面任意文字即可朗读。设置页新增两个开关。主界面朗读仍优先，但不再顺手停掉侧边栏；切会话、发消息不打断它 |
 
 这些改动没有回流上游。若上游恢复维护，这份 diff 可以按版本逐个挑回去。
 
@@ -131,7 +132,7 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | 最新版 | 仓库首页 → **Code** → Download ZIP |
 | **某个发行版** | **[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
 | 任意历史提交 | `git clone` 后 `git checkout <提交哈希>` |
-| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.4.6` |
+| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.5.0` |
 
 | 版本 | 说明 |
 |---|---|
@@ -153,6 +154,7 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | `v0.4.4` | **切换静默的真正修复**：拦截标记改为独立集合，避免被后续副本误读成「已入队」 |
 | `v0.4.5` | **新对话第一条不再被吞**：切换窗口让位于用户发起的轮次；回复生成后才挂载的客户端用「单轮 + 无读标记」识别；切会话不再残留上一会话的轮次标记 |
 | `v0.4.6` | **音色预设折叠**：每个预设一条摘要行，点开编辑；新增自动展开，删除后其余行保持原状态 |
+| `v0.5.0` | **侧边栏朗读与划词朗读**：右侧栏拖入/粘贴任意文本整篇朗读，编码识别、断点续读与进度；选中文字即可朗读；两个开关 |
 
 版本变更记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
