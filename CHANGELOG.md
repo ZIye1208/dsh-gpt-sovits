@@ -6,6 +6,21 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.4.6] — 2026-11-19
+
+Voice presets fold.
+
+### Changed
+
+- **Each voice preset is its own fold.** A preset is a whole form — name, two model pickers, a
+  reference clip, prompt text, language — so a few of them turned the settings page into a wall of
+  inputs where the one you meant to edit was hard to find. Each preset is now a single summary row
+  (its name, the two weight files and the reference clip) that opens on demand and folds back. A
+  newly added preset opens, a single preset opens by itself, and removing one leaves the surviving
+  rows folded exactly as they were.
+
+---
+
 ## [0.4.5] — 2026-11-17
 
 The first answer of a new conversation is spoken again.
