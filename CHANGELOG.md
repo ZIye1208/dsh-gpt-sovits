@@ -6,6 +6,43 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.5.1] — 2026-11-20
+
+Pick any block and read from there.
+
+### Added
+
+- **Block list with a live highlight.** The reader view renders the text as blocks instead of a
+  textarea, highlights the block being spoken, and scrolls it into view. Clicking any block starts
+  playback from that block. The player receives the same pre-split blocks the list renders, so
+  "click block N / highlight block N / speak block N" can never disagree.
+- **A 编辑 / 朗读视图 toggle.** 编辑 switches back to the textarea for corrections; 朗读 returns to the
+  block list. Importing a file now opens in edit mode first, so the text and detected encoding can be
+  checked before playback starts; pressing 朗读 switches to the block list automatically.
+- **`SovitsPlayer.play()` accepts pre-split blocks** through `options.blocks`, reusing the reader's own
+  splitter instead of splitting the text a second time.
+
+### Changed
+
+- **The reader toolbar is one row.** Voice, encoding, 打开文件 and the view toggle share a single
+  wrapped row; the two selects size to their content instead of stretching across the panel.
+- **The encoding control no longer disappears** when the text came from cache: it stays visible but
+  disabled, with a tooltip explaining that raw bytes are needed to re-decode.
+- **The empty state states the limits**: supported extensions, the 300,000-character cap, how encoding
+  detection works, and what playback inherits from the plugin.
+- **`GBK / ANSI（中文 Windows）` is now `GBK / ANSI`**, freeing most of that control's width.
+
+### Fixed
+
+- **Clicking a second block no longer clears the new playback's state.** An interrupted `play()` also
+  resolves, so a stale `then` could reset the stop button and progress of the playback that replaced
+  it. A monotonic `speakToken` now gates those callbacks.
+
+### Tests
+
+- No new automated tests; `node --check lib/client.js` and `node scripts/selfcheck.mjs` still report
+  57 passed / 5 pre-existing failures (the same five fail on the previous tag).
+
 ## [0.5.0] — 2026-11-20
 
 Read any text aloud.
