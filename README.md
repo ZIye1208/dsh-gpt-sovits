@@ -1,6 +1,6 @@
 # dsh-gpt-sovits
 
-[![version](https://img.shields.io/badge/version-v0.5.2-blue)](./CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-v0.5.3-blue)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20DSH%20desktop-lightgrey)
 
@@ -63,6 +63,7 @@ dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits
 | **0.5.0** | 侧边栏朗读与划词朗读 | 右侧栏新增「朗读文本」面板：拖入/打开文字文件或直接粘贴，整篇按块念完并显示进度，编码自动识别且可手动切换，文本与位置刷新不丢，被打断后从断点续读。选中页面任意文字即可朗读。设置页新增两个开关。主界面朗读仍优先，但不再顺手停掉侧边栏；切会话、发消息不打断它 |
 | **0.5.1** | 块列表高亮与点击跳转 | 朗读视图改成块列表：当前块高亮并自动滚动，点任意块从那里开始念；顶部「编辑 / 朗读视图」切换，导入文件默认进编辑模式、点朗读才切块列表；工具条收成一行，编码控件不再消失，空状态写清支持格式与 30 万字符上限 |
 | **0.5.2** | 清空真正清空 | 「清空」原来只清界面和内存，`localStorage` 里的整篇文档没删，下次打开又被捞回来。现在清空会停播放、清内存并删缓存；编辑后失焦即保存、导入文件即落盘、换编码即保存。selfcheck 五条过时断言一并修正，62/62 全过 |
+| **0.5.3** | 重开面板接回播放 | 朗读中点 tab 的 × 再打开，原来界面显示空闲、声音还在播。根因是认领判据拿「当前块文本」比整篇、又误用 busy 字段（它只表示正在合成，出声时是 false）。改用 sticky + 实时进度，重开后停止按钮、第 i / m 块与当前块高亮一并恢复 |
 
 这些改动没有回流上游。若上游恢复维护，这份 diff 可以按版本逐个挑回去。
 
@@ -134,7 +135,7 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | 最新版 | 仓库首页 → **Code** → Download ZIP |
 | **某个发行版** | **[Releases](https://github.com/ZIye1208/dsh-gpt-sovits/releases) 页** → 选版本 → `Source code (zip)` |
 | 任意历史提交 | `git clone` 后 `git checkout <提交哈希>` |
-| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.5.2` |
+| 安装指定版本 | `dsh plugin --profile desktop add github:ZIye1208/dsh-gpt-sovits#v0.5.3` |
 
 | 版本 | 说明 |
 |---|---|
@@ -159,6 +160,7 @@ node scripts/integration.mjs    # 真实引擎集成测试，16 项（需引擎�
 | `v0.5.0` | **侧边栏朗读与划词朗读**：右侧栏拖入/粘贴任意文本整篇朗读，编码识别、断点续读与进度；选中文字即可朗读；两个开关 |
 | `v0.5.1` | **块列表高亮与点击跳转**：当前块高亮跟随、点块从该处朗读、导入默认编辑模式、工具条收成一行 |
 | `v0.5.2` | **清空真正清空**：清空删缓存、编辑失焦保存、导入即落盘；selfcheck 修到 62/62 |
+| `v0.5.3` | **重开面板接回播放**：关掉朗读 tab 再打开，停止按钮、进度与当前块高亮直接恢复 |
 
 版本变更记录见 [CHANGELOG.md](./CHANGELOG.md)。
 

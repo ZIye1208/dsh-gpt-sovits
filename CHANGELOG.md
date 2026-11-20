@@ -6,6 +6,26 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.5.3] — 2026-11-20
+
+Reopening the reader tab picks the playback back up.
+
+### Fixed
+
+- **Closing and reopening the reader tab showed an idle panel while the audio kept playing.**
+  The panel re-attached to an in-flight playback by comparing `player.currentText` (the block
+  being spoken, a few dozen characters) with the whole document — never equal, so the claim
+  always bailed out. The guard now uses the playback's own `sticky` marker plus a live
+  `progress`, and restores the stop button, the `block i / m` counter and the highlighted row.
+- **The claim still failed after that, because it tested `busy`.** `busy` only means "a clip is
+  being synthesized"; while audio is actually playing it is `false` and `playing` is `true`
+  (`this.playing = true; this.busy = false;` in `play()`). Claiming on `busy` therefore rejected
+  exactly the case it was meant to catch.
+
+### Tests
+
+- `node --check lib/client.js`; `node scripts/selfcheck.mjs` → 62 passed, 0 failed.
+
 ## [0.5.2] — 2026-11-20
 
 Clear actually clears.
