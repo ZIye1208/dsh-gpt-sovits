@@ -347,7 +347,12 @@ check('host: validates that the engine really returned WAV', () => {
 // ── Client half: loader contract + text pipeline ──────────────────────────────
 
 const clientPath = path.join(root, 'lib', 'client.js')
-const clientSource = readFileSync(clientPath, 'utf8')
+/*
+ * Normalise line endings before any source-text assertion. The repository keeps CRLF
+ * while a profile install may keep LF, and a multi-line `\n` assertion silently fails
+ * on the other one — a false failure that says nothing about the code.
+ */
+const clientSource = readFileSync(clientPath, 'utf8').replace(/\r\n/g, '\n')
 /** The Python supervisor, checked as text: it runs outside Node entirely. */
 const supervisorSource = readFileSync(path.join(root, 'lib', 'supervisor.py'), 'utf8')
 
@@ -730,9 +735,14 @@ check('client: enabling auto-read does not read the reply already on screen', ()
   // The persisted last-read mark is the gate, not a per-instance flag: N drivers
   // mount at once, so per-instance state is not shared and every copy would
   // treat itself as the one that just switched on.
-  assert(/lastRead\.current === latestId/.test(clientSource), 'the persisted mark must gate playback')
-  assert(/readStored\(LAST_READ_KEY/.test(clientSource), 'the mark must be read at mount')
-  return 'gated on the persisted mark'
+  //
+  // The mark is keyed by session since 0.4.3 (`markKeyFor`), so the gate reads it
+  // through `readMarkNow()`; the old `lastRead.current === latestId` form named a
+  // variable that no longer exists.
+  assert(/readMarkNow\(\) === latestId/.test(clientSource), 'the persisted mark must gate playback')
+  assert(/const readMarkNow = \(\) => readStored\(markKeyFor\(session\), ""\)/.test(clientSource),
+    'the mark must be read through the per-session key at mount')
+  return 'gated on the persisted per-session mark'
 })
 
 /** A chat store shaped like the one the shell hands the driver. */
@@ -744,7 +754,16 @@ function fakeChatStore(turns) {
         kind: 'assistant-step',
         data: {
           turn: entry.turn,
-          finalNode: { messageId: entry.messageId, seq: entry.turn, blocks: [{ kind: 'text', text: entry.text }] },
+          /*
+           * A streaming turn has no `finalNode` yet: its text sits in `blocks` and its id
+           * on the node itself. That is exactly what the driver reads as `latestFinal`,
+           * so the fixture has to model the difference instead of marking everything
+           * settled — a settled reply already on screen is history, one still being
+           * generated is news.
+           */
+          ...(entry.streaming
+            ? { messageId: entry.messageId, blocks: [{ kind: 'text', text: entry.text }] }
+            : { finalNode: { messageId: entry.messageId, seq: entry.turn, blocks: [{ kind: 'text', text: entry.text }] } }),
         },
       })),
     },
@@ -845,7 +864,12 @@ await (async () => {
     const turns = [
       { turn: 1, messageId: 'm1', text: '第一轮回复' },
       { turn: 2, messageId: 'm2', text: '第二轮回复' },
-      { turn: 3, messageId: 'm3', text: '第三轮，最新的一条' },
+      /*
+       * The newest reply is still streaming. A settled reply that was already on screen
+       * is history and is silenced on mount; one being generated right now is news and
+       * must be read — the distinction the driver makes with `latestFinal`.
+       */
+      { turn: 3, messageId: 'm3', text: '第三轮，最新的一条。', streaming: true },
     ]
     // The toggle was already on when the page loaded, so every driver is armed,
     // and the newest reply is new: exactly one of the three may speak.
@@ -1048,7 +1072,8 @@ await (async () => {
      * check what a restart actually leaves behind — a source-text assertion cannot see a stale
      * queue or a surviving claim.
      */
-    const restartApi = loadClient({ effects: false, env: fakeWindow() }).exports.__test
+    const restartEnv = fakeWindow()
+    const restartApi = loadClient({ effects: false, env: restartEnv }).exports.__test
     assert(typeof restartApi.restart === 'function', 'the restart must be reachable for a check')
 
     const run = restartApi.player
@@ -1061,6 +1086,9 @@ await (async () => {
     const queuedBefore = run.pending.length
     assert(restartApi.CLAIMED.size === 2, 'the claims must be set up')
 
+    // A per-session read mark that must survive the restart below.
+    restartEnv.window.localStorage.setItem('gpt-sovits.lastRead.session-keep', 'msg-keep')
+
     const first = restartApi.restart('selfcheck')
     assert(first === true, 'the first restart must be accepted')
     assert(run.pending.length === 0, `the queue must be emptied, got ${run.pending.length}`)
@@ -1069,9 +1097,14 @@ await (async () => {
     assert(run.playing === false && run.busy === false, 'playback must be stopped')
     assert(restartApi.CLAIMED.size === 0, 'the claims must be released')
     assert(restartApi.pluginEpoch() === 1, `the epoch must advance, got ${restartApi.pluginEpoch()}`)
-    // The read mark is persisted, so it must be gone from storage too — otherwise the next
-    // conversation's own reply would look already read.
-    assert(restartApi.readMark() === '', `the read mark must be cleared, got ${JSON.stringify(restartApi.readMark())}`)
+    /*
+     * A per-session read mark must SURVIVE the restart. It used to be cleared because
+     * one global id could name a message in the conversation being switched away from;
+     * with a per-session key that hazard is gone, and clearing it would make switching
+     * back re-read a reply the user already heard.
+     */
+    assert(restartApi.readMarkFor('session-keep') === 'msg-keep',
+      `a per-session read mark must survive, got ${JSON.stringify(restartApi.readMarkFor('session-keep'))}`)
 
     /*
      * One switch produces several signals a render apart, so a second call inside the guard
@@ -1099,7 +1132,14 @@ await (async () => {
     const restartBody = clientSource.slice(clientSource.indexOf('const RESTART_PLUGIN = (reason)'));
     assert(/player\.restart\(\)/.test(restartBody), 'the restart must reset the player')
     assert(/CLAIMED\.clear\(\)/.test(restartBody), 'the restart must release the claims')
-    assert(/writeStored\(LAST_READ_KEY, ""\)/.test(clientSource), 'the restart must forget the read mark')
+    /*
+     * The read mark is deliberately KEPT across a restart since the key became
+     * per-session: a surviving mark cannot name a message in another conversation,
+     * and clearing it would make switching back re-read a reply already heard.
+     * What must be gone is the *claim*, not the mark.
+     */
+    assert(!/writeStored\(LAST_READ_KEY, ""\)/.test(restartBody),
+      'the restart must keep the per-session read mark; clearing it re-reads on switch-back')
     assert(/PLUGIN_EPOCH \+= 1/.test(restartBody), 'the restart must bump the epoch')
 
     /*
@@ -2162,7 +2202,7 @@ await check('client: one turn is claimed once, and a remount does not replay it'
    */
   assert(/if \(LAST_RESET_TURN !== null && turnCount <= LAST_RESET_TURN\) return;/.test(clientSource),
     'a turn already claimed by a sibling must be skipped')
-  assert(/LAST_RESET_TURN = turnCount;\n\s*const dropped = player\.pending\.length;/.test(clientSource),
+  assert(/LAST_RESET_TURN = turnCount;[\s\S]{0,400}?const dropped = player\.pending\.length;/.test(clientSource),
     'the claim must be taken before the work, so a losing copy never reaches the player')
   assert(/if \(LAST_RESET_TURN === null\) LAST_RESET_TURN = turnCount;/.test(clientSource),
     'a fresh mount must adopt an existing claim rather than re-reset the turn it arrives with')

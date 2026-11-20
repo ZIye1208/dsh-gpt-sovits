@@ -6,6 +6,38 @@ All notable changes to this plugin are recorded here. The format follows
 
 ---
 
+## [0.5.2] — 2026-11-20
+
+Clear actually clears.
+
+### Fixed
+
+- **Clearing the reader left the text in place on the next open.** The document lives in
+  `localStorage` (`gpt-sovits:reader-doc`) and was only written when playback started;
+  「清空」 cleared the component's memory and the textarea but never that entry, so the next
+  mount read the document straight back. Clearing now stops playback, resets the buffer and
+  removes the stored document.
+- **Editing without pressing 朗读 lost the edit.** The document was only persisted on playback
+  start, so a correction followed by closing the panel came back as the old text. The textarea
+  now saves on blur, and deleting all the text clears the stored copy.
+- **Importing a file did not persist it.** A file was only remembered once it had been read
+  aloud; it is now stored as soon as it loads, so reopening the panel shows it.
+- **Re-decoding with another encoding did not persist either.** The re-decoded text is now
+  stored immediately.
+
+### Changed
+
+- **The self-check passes 62 / 62.** Five checks had drifted from the implementation rather
+  than from a defect: a renamed read-mark accessor, a restructured turn-claim guard, a restart
+  that intentionally keeps the per-session mark, a multi-line assertion that CRLF broke, and a
+  fixture that marked a streaming reply as settled and gave it no sentence terminator. Each was
+  updated to assert the current behaviour; the restart case now pins the opposite rule
+  (the per-session mark must survive) explicitly.
+
+### Tests
+
+- `node --check lib/client.js`; `node scripts/selfcheck.mjs` → 62 passed, 0 failed.
+
 ## [0.5.1] — 2026-11-20
 
 Pick any block and read from there.
